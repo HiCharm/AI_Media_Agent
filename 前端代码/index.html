@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能语音助手 - 学生信息管理系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 85vh;
+        }
+        
+        .header {
+            background: linear-gradient(90deg, #4f6bff, #3a56e6);
+            color: white;
+            padding: 20px 30px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .status-indicator {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #4ade80;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .chat-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            margin-bottom: 15px;
+            border-radius: 18px;
+            line-height: 1.4;
+            position: relative;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .user-message {
+            align-self: flex-end;
+            background: #4f6bff;
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+        
+        .assistant-message {
+            align-self: flex-start;
+            background: #f0f2f5;
+            color: #333;
+            border-bottom-left-radius: 5px;
+        }
+        
+        .message-time {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 5px;
+            text-align: right;
+        }
+        
+        .input-container {
+            padding: 20px;
+            border-top: 1px solid #eaeaea;
+            display: flex;
+            align-items: center;
+            background: white;
+        }
+        
+        .text-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #ddd;
+            border-radius: 24px;
+            outline: none;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+        
+        .text-input:focus {
+            border-color: #4f6bff;
+            box-shadow: 0 0 0 2px rgba(79, 107, 255, 0.2);
+        }
+        
+        .voice-btn, .send-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-left: 10px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s;
+        }
+        
+        .voice-btn {
+            background: #f0f2f5;
+            color: #4f6bff;
+        }
+        
+        .voice-btn:hover, .voice-btn.listening {
+            background: #4f6bff;
+            color: white;
+        }
+        
+        .send-btn {
+            background: #4f6bff;
+            color: white;
+        }
+        
+        .send-btn:hover {
+            background: #3a56e6;
+            transform: scale(1.05);
+        }
+        
+        .voice-btn i, .send-btn i {
+            font-size: 18px;
+        }
+        
+        .welcome-message {
+            text-align: center;
+            padding: 30px 20px;
+            color: #666;
+        }
+        
+        .welcome-message h2 {
+            margin-bottom: 10px;
+            color: #4f6bff;
+        }
+        
+        .suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+        
+        .suggestion-chip {
+            background: #f0f2f5;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .suggestion-chip:hover {
+            background: #e0e5ff;
+            transform: translateY(-2px);
+        }
+        
+        .typing-indicator {
+            display: inline-flex;
+            align-items: center;
+            padding: 12px 16px;
+            background: #f0f2f5;
+            border-radius: 18px;
+            border-bottom-left-radius: 5px;
+            max-width: 80%;
+            margin-bottom: 15px;
+            align-self: flex-start;
+        }
+        
+        .typing-dots {
+            display: flex;
+        }
+        
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #999;
+            margin: 0 2px;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                height: 95vh;
+                border-radius: 15px;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
+            
+            .status-indicator {
+                position: relative;
+                right: auto;
+                top: auto;
+                transform: none;
+                justify-content: center;
+                margin-top: 10px;
+            }
+            .import-btn {
+                position: absolute;
+                right: 20px;
+                bottom: -45px;
+                padding: 8px 16px;
+                border: none;
+                background: #ffffff;
+                color: #4f6bff;
+                border-radius: 18px;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+                cursor: pointer;
+                font-size: 14px;
+                transition: 0.3s;
+            }
+
+                .import-btn:hover {
+                    background: #e0e5ff;
+                }
+
+            /* 导入弹窗 */
+            .import-dialog {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.45);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 99;
+            }
+
+            .import-box {
+                width: 420px;
+                background: #fff;
+                border-radius: 12px;
+                padding: 20px;
+                box-shadow: 0 0 20px rgba(0,0,0,0.3);
+            }
+
+                .import-box h3 {
+                    margin-bottom: 10px;
+                    font-size: 18px;
+                    text-align: center;
+                }
+
+                .import-box textarea {
+                    width: 100%;
+                    height: 120px;
+                    border: 1px solid #ddd;
+                    border-radius: 8px;
+                    padding: 10px;
+                    resize: vertical;
+                }
+
+                .import-box .btn-group {
+                    margin-top: 12px;
+                    display: flex;
+                    justify-content: space-between;
+                }
+
+                .import-box button {
+                    padding: 8px 14px;
+                    border: none;
+                    border-radius: 6px;
+                    cursor: pointer;
+                }
+
+            .import-confirm {
+                background: #4f6bff;
+                color: white;
+            }
+
+            .import-cancel {
+                background: #ddd;
+            }
+
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>智能语音助手</h1>
+            <p>学生信息管理与查询系统</p>
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>系统运行中</span>
+            </div>
+            <button class="import-btn" onclick="openImportDialog()">⚙ 数据导入</button>
+
+        </div>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="welcome-message">
+                <h2>欢迎使用智能语音助手</h2>
+                <p>我是您的智能助手，可以帮助您记录和查询学生信息。</p>
+                <p>请用语音或文字告诉我您的需求。</p>
+
+                <div class="suggestions">
+                    <div class="suggestion-chip" onclick="sendSuggestion('记录学生张三的请假信息')">记录学生请假</div>
+                    <div class="suggestion-chip" onclick="sendSuggestion('查询李四的近期情况')">查询学生情况</div>
+                    <div class="suggestion-chip" onclick="sendSuggestion('显示所有有困难的学生')">查看困难学生</div>
+                    <div class="suggestion-chip" onclick="sendSuggestion('添加新的学生信息')">添加学生信息</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-container">
+            <input type="text" class="text-input" id="textInput" placeholder="输入您的问题或需求...">
+            <button class="voice-btn" id="voiceBtn" title="语音输入">
+                <i class="fas fa-microphone"></i>
+            </button>
+            <button class="send-btn" id="sendBtn" title="发送消息">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+
+        <!-- 批量导入弹窗 -->
+        <div id="importDialog" class="import-dialog" style="display:none;">
+            <div class="import-box">
+                <h3>批量导入 Document 数据</h3>
+
+                <p style="margin:8px 0;">上传 CSV 文件：</p>
+                <input type="file" id="importFile" accept=".csv">
+
+                <p style="margin:8px 0;">或粘贴 JSON 数组：</p>
+                <textarea id="importJson" placeholder='例如：[{"doc_type":"student","identifier":"S001","data":{"name":"张三"}}]'></textarea>
+
+                <div class="btn-group">
+                    <button class="import-cancel" onclick="closeImportDialog()">取消</button>
+                    <button class="import-confirm" onclick="submitImport()">导 入</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // DOM元素
+        const chatContainer = document.getElementById('chatContainer');
+        const textInput = document.getElementById('textInput');
+        const voiceBtn = document.getElementById('voiceBtn');
+        const sendBtn = document.getElementById('sendBtn');
+        
+        // 语音识别相关变量
+        let recognition = null;
+        let isListening = false;
+        
+        // 检查浏览器是否支持语音识别
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'zh-CN';
+            
+            recognition.onstart = function() {
+                isListening = true;
+                voiceBtn.classList.add('listening');
+                voiceBtn.innerHTML = '<i class="fas fa-circle"></i>';
+            };
+            
+            recognition.onend = function() {
+                isListening = false;
+                voiceBtn.classList.remove('listening');
+                voiceBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+            };
+            
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                textInput.value = transcript;
+                sendMessage();
+            };
+            
+            recognition.onerror = function(event) {
+                console.error('语音识别错误:', event.error);
+                addMessage('系统', '语音识别失败，请重试或使用文字输入。', 'assistant');
+                isListening = false;
+                voiceBtn.classList.remove('listening');
+                voiceBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+            };
+        } else {
+            voiceBtn.style.display = 'none';
+        }
+        
+        // 发送消息函数
+        function sendMessage() {
+            const message = textInput.value.trim();
+            if (message === '') return;
+            
+            // 添加用户消息到聊天界面
+            addMessage('您', message, 'user');
+            textInput.value = '';
+            
+            // 显示助手正在输入
+            showTypingIndicator();
+            
+            // 发送到后端API
+            const API_BASE_URL = 'http://localhost:5000';
+
+            // 修改发送消息函数中的fetch调用
+            fetch(`${API_BASE_URL}/api/chat`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: message })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // 移除输入指示器
+                removeTypingIndicator();
+                
+                // 添加助手回复
+                if (data.status === 'success') {
+                    addMessage('助手', data.response, 'assistant');
+                } else {
+                    addMessage('助手', '抱歉，我遇到了一些问题，请稍后重试。', 'assistant');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                removeTypingIndicator();
+                addMessage('助手', '网络连接错误，请检查后端服务是否正常运行。', 'assistant');
+            });
+        }
+        
+        // 添加消息到聊天界面
+        function addMessage(sender, text, type) {
+            const messageElement = document.createElement('div');
+            messageElement.className = `message ${type}-message`;
+            
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            messageElement.innerHTML = `
+                <div>${text}</div>
+                <div class="message-time">${sender} • ${time}</div>
+            `;
+            
+            chatContainer.appendChild(messageElement);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        // 显示输入指示器
+        function showTypingIndicator() {
+            const typingElement = document.createElement('div');
+            typingElement.className = 'typing-indicator';
+            typingElement.id = 'typingIndicator';
+            
+            typingElement.innerHTML = `
+                <div class="typing-dots">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            `;
+            
+            chatContainer.appendChild(typingElement);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        // 移除输入指示器
+        function removeTypingIndicator() {
+            const typingElement = document.getElementById('typingIndicator');
+            if (typingElement) {
+                typingElement.remove();
+            }
+        }
+        
+        // 发送建议消息
+        function sendSuggestion(text) {
+            textInput.value = text;
+            sendMessage();
+        }
+        
+        // 语音按钮点击事件
+        voiceBtn.addEventListener('click', function() {
+            if (!recognition) {
+                addMessage('系统', '您的浏览器不支持语音识别，请使用最新版Chrome浏览器。', 'assistant');
+                return;
+            }
+            
+            if (isListening) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        });
+        
+        // 发送按钮点击事件
+        sendBtn.addEventListener('click', sendMessage);
+        
+        // 输入框回车事件
+        textInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        // 初始欢迎消息
+        window.onload = function() {
+            setTimeout(() => {
+                addMessage('助手', '您好！我是您的智能语音助手，可以帮助您记录和查询学生信息。请告诉我您需要什么帮助？', 'assistant');
+            }, 1000);
+        };
+        function openImportDialog() {
+            document.getElementById("importDialog").style.display = "flex";
+        }
+
+        function closeImportDialog() {
+            document.getElementById("importDialog").style.display = "none";
+        }
+
+        function submitImport() {
+            const API_BASE_URL = "http://localhost:5000";
+
+            const fileInput = document.getElementById("importFile");
+            const jsonText = document.getElementById("importJson").value.trim();
+
+            // 情况 1：加入 CSV 处理
+            if (fileInput.files.length > 0) {
+                let formData = new FormData();
+                formData.append("file", fileInput.files[0]);
+
+                fetch(`${API_BASE_URL}/api/import`, {
+                    method: "POST",
+                    body: formData
+                })
+                    .then(r => r.json())
+                    .then(d => {
+                        closeImportDialog();
+                        addMessage("助手", "CSV 导入完成：" + JSON.stringify(d.summary), "assistant");
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        addMessage("助手", "CSV 导入失败：" + err, "assistant");
+                    });
+
+                return;
+            }
+
+            // 情况 2：JSON 数组
+            if (jsonText !== "") {
+                let jsonArray = null;
+                try {
+                    jsonArray = JSON.parse(jsonText);
+                    if (!Array.isArray(jsonArray)) {
+                        throw "不是 JSON 数组";
+                    }
+                } catch (e) {
+                    addMessage("助手", "请输入正确的 JSON 数组格式：" + e, "assistant");
+                    return;
+                }
+
+                fetch(`${API_BASE_URL}/api/import`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(jsonArray)
+                })
+                    .then(r => r.json())
+                    .then(d => {
+                        closeImportDialog();
+                        addMessage("助手", "JSON 导入完成：" + JSON.stringify(d.summary), "assistant");
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        addMessage("助手", "JSON 导入失败：" + err, "assistant");
+                    });
+            }
+            else {
+                addMessage("助手", "请上传文件或输入 JSON 后再导入。", "assistant");
+            }
+        }
+
+    </script>
+</body>
+</html>
